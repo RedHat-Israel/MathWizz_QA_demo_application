@@ -50,8 +50,9 @@ tmp/
 temp/
 *.tmp
 
-# Screenshots and demo images
+# Screenshots and demo images (excluding application assets)
 *.jpg
 *.jpeg
 *.png
+!frontend/public/frontend_background.jpg
 !**/public/favicon.png
