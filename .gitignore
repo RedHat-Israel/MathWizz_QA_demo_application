@@ -10,7 +10,18 @@ dist/
 *.so
 *.dylib
 
-# Test coverage
+# Test files and coverage
+*_test.go
+*_integration_test.go
+suite_test.go
+test_helpers.go
+*.test.js
+*.test.jsx
+__tests__/
+e2e/
+.golangci.yml
+.eslintrc.js
+playwright.config.js
 *.out
 coverage/
 .nyc_output/
@@ -38,3 +49,9 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Screenshots and demo images
+*.jpg
+*.jpeg
+*.png
+!**/public/favicon.png
