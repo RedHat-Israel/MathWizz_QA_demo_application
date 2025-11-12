@@ -10,18 +10,7 @@ dist/
 *.so
 *.dylib
 
-# Test files and coverage
-*_test.go
-*_integration_test.go
-suite_test.go
-test_helpers.go
-*.test.js
-*.test.jsx
-__tests__/
-e2e/
-.golangci.yml
-.eslintrc.js
-playwright.config.js
+# Test coverage (test files are included in this branch)
 *.out
 coverage/
 .nyc_output/
@@ -50,8 +39,4 @@ tmp/
 temp/
 *.tmp
 
-# Screenshots and demo images
-*.jpg
-*.jpeg
-*.png
-!**/public/favicon.png
+# Screenshots and demo images (included in this branch for lecture purposes)
