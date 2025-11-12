@@ -1,0 +1,22 @@
+# ConfigMap for environment variables
+# Contains non-sensitive configuration for all services
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mathwizz-config
+  namespace: mathwizz
+data:
+  # Database configuration
+  DB_HOST: "database-service"
+  DB_NAME: "mathwizz"
+  DB_USER: "mathwizz"
+
+  # NATS configuration
+  NATS_URL: "nats://nats-service:4222"
+
+  # Web-server configuration
+  PORT: "8080"
+
+  # Frontend configuration
+  REACT_APP_API_URL: "http://localhost:8080"

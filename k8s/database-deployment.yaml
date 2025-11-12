@@ -1,0 +1,63 @@
+# Database Deployment for PostgreSQL
+# Manages the database pod lifecycle
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: mathwizz
+  labels:
+    app: database
+    component: storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+        component: storage
+    spec:
+      containers:
+        - name: postgres
+          image: localhost/mathwizz/database:latest
+          imagePullPolicy: Never  # Use local image from Kind
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mathwizz-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - /usr/local/bin/healthcheck.sh
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /usr/local/bin/healthcheck.sh
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          emptyDir: {}

@@ -1,0 +1,52 @@
+# History-Worker Deployment
+# Manages the history-worker pod lifecycle
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: history-worker
+  namespace: mathwizz
+  labels:
+    app: history-worker
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: history-worker
+  template:
+    metadata:
+      labels:
+        app: history-worker
+        component: worker
+    spec:
+      containers:
+        - name: history-worker
+          image: localhost/mathwizz/history-worker:latest
+          imagePullPolicy: Never  # Use local image from Kind
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mathwizz-secrets
+                  key: DB_PASSWORD
+            - name: NATS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: NATS_URL

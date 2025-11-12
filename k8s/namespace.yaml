@@ -1,0 +1,10 @@
+# Namespace for MathWizz application
+# Isolates all MathWizz resources in a dedicated namespace
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mathwizz
+  labels:
+    app: mathwizz
+    environment: development

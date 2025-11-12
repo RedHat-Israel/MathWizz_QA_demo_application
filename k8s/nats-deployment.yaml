@@ -1,0 +1,43 @@
+# NATS Deployment for message queue
+# Manages the NATS server pod lifecycle
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats
+  namespace: mathwizz
+  labels:
+    app: nats
+    component: messaging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+        component: messaging
+    spec:
+      containers:
+        - name: nats
+          image: localhost/mathwizz/message-queue:latest
+          imagePullPolicy: Never  # Use local image from Kind
+          ports:
+            - containerPort: 4222
+              name: client
+            - containerPort: 8222
+              name: monitoring
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 5
+            periodSeconds: 5
