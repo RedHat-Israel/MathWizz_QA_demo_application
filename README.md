@@ -64,7 +64,7 @@ This script will:
 3. Solve a math problem (e.g., "25+75")
 4. Check your history to see the solved problem
 
-## Running Tests Locally
+## Running Tests Locally - MAKE SURE YOU'RE USING A BRANCH THAT HAS TESTS!
 
 ### Web-Server Tests
 
