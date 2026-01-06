@@ -1,0 +1,15 @@
+name: No PRs Allowed
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  close_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close Pull Request
+        if: github.actor != 'meyrevived'
+        uses: superbrothers/close-pull-request@v3.1.2
+        with:
+          comment: "Thank you for your interest! However, this is a teaching resource and does not accept pull requests at this time. For improvements or bug fixes, please open an issue via the GitHub web console. Please feel free to fork the project for your own use."
