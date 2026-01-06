@@ -39,4 +39,9 @@ tmp/
 temp/
 *.tmp
 
-# Screenshots and demo images (included in this branch for lecture purposes)
+# Screenshots and demo images (excluding application assets)
+*.jpg
+*.jpeg
+*.png
+!frontend/public/frontend_background.jpg
+!**/public/favicon.png
