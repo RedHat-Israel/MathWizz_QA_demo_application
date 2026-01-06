@@ -53,11 +53,21 @@ spec:
                 secretKeyRef:
                   name: mathwizz-secrets
                   key: DB_PASSWORD
+            - name: DB_SSL_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: mathwizz-config
+                  key: DB_SSL_MODE
             - name: NATS_URL
               valueFrom:
                 configMapKeyRef:
                   name: mathwizz-config
                   key: NATS_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mathwizz-secrets
+                  key: JWT_SECRET
           livenessProbe:
             httpGet:
               path: /health

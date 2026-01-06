@@ -11,6 +11,7 @@ data:
   DB_HOST: "database-service"
   DB_NAME: "mathwizz"
   DB_USER: "mathwizz"
+  DB_SSL_MODE: "disable"  # For local development without SSL
 
   # NATS configuration
   NATS_URL: "nats://nats-service:4222"

@@ -13,6 +13,7 @@ require (
 	github.com/onsi/gomega v1.31.1
 	github.com/testcontainers/testcontainers-go v0.28.0
 	golang.org/x/crypto v0.19.0
+	golang.org/x/time v0.3.0
 )
 
 require (

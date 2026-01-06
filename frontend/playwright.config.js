@@ -12,6 +12,12 @@ module.exports = defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
 
+  // Global setup: Start backend services (database, NATS, web-server, history-worker)
+  globalSetup: require.resolve('./global-setup.js'),
+
+  // Global teardown: Stop and cleanup backend services
+  globalTeardown: require.resolve('./global-teardown.js'),
+
   use: {
     baseURL: process.env.FRONTEND_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -25,6 +31,7 @@ module.exports = defineConfig({
     },
   ],
 
+  // Frontend web server (Playwright auto-starts this)
   webServer: process.env.CI
     ? undefined
     : {

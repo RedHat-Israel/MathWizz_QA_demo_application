@@ -21,15 +21,31 @@ fi
 # Function to load image
 load_image() {
     local service=$1
-    local image_name="${IMAGE_PREFIX}mathwizz/${service}:latest"
+    local source_image="${IMAGE_PREFIX}mathwizz/${service}:latest"
+    local target_image="mathwizz/${service}:latest"
 
     echo "Loading ${service} image..."
 
     if [ "$USE_PODMAN" = true ]; then
-        # With Podman, save to tar and load as archive
-        podman save -o /tmp/${service}.tar ${image_name}
-        kind load image-archive /tmp/${service}.tar --name $CLUSTER_NAME
-        rm /tmp/${service}.tar
+        # With Podman, we need to retag to remove localhost/ prefix,
+        # then save to tar and load as archive
+
+        # Clean up any leftover tar file from previous failed runs
+        rm -f /tmp/${service}.tar
+
+        # Create tag without localhost/ prefix (overwrites if exists)
+        podman tag ${source_image} ${target_image} || {
+            echo "Warning: Failed to tag ${source_image} as ${target_image}"
+            echo "This might happen if the image was deleted. Rebuilding..."
+            return 1
+        }
+
+        podman save -o /tmp/${service}.tar ${target_image}
+        kind load image-archive /tmp/${service}.tar --name $CLUSTER_NAME 2>&1 | grep -v "using podman due to KIND_EXPERIMENTAL_PROVIDER" | grep -v "enabling experimental podman provider" || true
+        rm -f /tmp/${service}.tar
+
+        # Note: We don't clean up the ${target_image} tag - it's harmless and
+        # prevents issues with cached builds on subsequent runs
     else
         # With Docker, use direct load
         kind load docker-image mathwizz/${service}:latest --name $CLUSTER_NAME
