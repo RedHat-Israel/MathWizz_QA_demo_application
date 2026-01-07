@@ -27,30 +27,20 @@ load_image() {
     echo "Loading ${service} image..."
 
     if [ "$USE_PODMAN" = true ]; then
-        # With Podman, we need to retag to remove localhost/ prefix,
-        # then save to tar and load as archive
-
-        # Clean up any leftover tar file from previous failed runs
-        rm -f /tmp/${service}.tar
-
-        # Create tag without localhost/ prefix (overwrites if exists)
-        podman tag ${source_image} ${target_image} || {
+        # With Podman, retag to remove localhost/ prefix first
+        # This ensures the image exists with the correct name for kind to load
+        podman tag ${source_image} ${target_image} 2>/dev/null || {
             echo "Warning: Failed to tag ${source_image} as ${target_image}"
-            echo "This might happen if the image was deleted. Rebuilding..."
-            return 1
+            echo "Image may already be tagged correctly"
         }
 
-        podman save -o /tmp/${service}.tar ${target_image}
-        kind load image-archive /tmp/${service}.tar --name $CLUSTER_NAME || echo "Warning: Image load reported error, but may have succeeded"
-        rm -f /tmp/${service}.tar
-
-        # Note: We don't clean up the ${target_image} tag - it's harmless and
-        # prevents issues with cached builds on subsequent runs
+        # Use kind load docker-image which works with podman when KIND_EXPERIMENTAL_PROVIDER is set
+        # This is more reliable than tar archives for getting the correct image name into Kind
+        kind load docker-image ${target_image} --name $CLUSTER_NAME
     else
         # With Docker, use direct docker-image load (requires BuildKit to be disabled)
         # This is more reliable than tar archives when BuildKit is off
-        # Note: May report errors in Docker-in-Docker (act) but often still works
-        kind load docker-image mathwizz/${service}:latest --name $CLUSTER_NAME || echo "Warning: Image load reported error, but may have succeeded"
+        kind load docker-image mathwizz/${service}:latest --name $CLUSTER_NAME
     fi
 
     echo "✓ ${service} image loaded"

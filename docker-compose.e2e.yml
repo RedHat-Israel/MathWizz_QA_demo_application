@@ -1,0 +1,104 @@
+# Docker Compose configuration for E2E testing
+# Spins up all backend services for Playwright E2E tests
+# Usage: docker-compose -f docker-compose.e2e.yml up -d
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    container_name: mathwizz-e2e-database
+    environment:
+      POSTGRES_DB: mathwizz
+      POSTGRES_USER: mathwizz
+      POSTGRES_PASSWORD: e2etest123  # Simple password for E2E testing only
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mathwizz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - mathwizz-e2e
+
+  # NATS Message Queue
+  nats:
+    build:
+      context: ./message-queue
+      dockerfile: Dockerfile
+    container_name: mathwizz-e2e-nats
+    ports:
+      - "4222:4222"
+      - "8222:8222"  # HTTP monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - mathwizz-e2e
+
+  # Web Server (Go API)
+  web-server:
+    build:
+      context: ./web-server
+      dockerfile: Dockerfile
+    container_name: mathwizz-e2e-web-server
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: mathwizz
+      DB_USER: mathwizz
+      DB_PASSWORD: e2etest123
+      DB_SSLMODE: disable
+      NATS_URL: nats://nats:4222
+      PORT: 8080
+      JWT_SECRET: e2e-test-secret-key-at-least-32-characters-long
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mathwizz-e2e
+
+  # History Worker (Go worker)
+  history-worker:
+    build:
+      context: ./history-worker
+      dockerfile: Dockerfile
+    container_name: mathwizz-e2e-history-worker
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: mathwizz
+      DB_USER: mathwizz
+      DB_PASSWORD: e2etest123
+      DB_SSLMODE: disable
+      NATS_URL: nats://nats:4222
+    depends_on:
+      database:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    networks:
+      - mathwizz-e2e
+
+networks:
+  mathwizz-e2e:
+    driver: bridge
+
+# Note: Frontend is NOT included here - Playwright starts it using webServer config
+# This compose file only handles backend services (database, NATS, web-server, history-worker)

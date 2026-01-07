@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: history-worker
-          image: localhost/mathwizz/history-worker:latest
+          image: mathwizz/history-worker:latest
           imagePullPolicy: Never  # Use local image from Kind
           env:
             - name: DB_HOST

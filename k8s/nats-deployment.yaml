@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: nats
-          image: localhost/mathwizz/message-queue:latest
+          image: mathwizz/message-queue:latest
           imagePullPolicy: Never  # Use local image from Kind
           ports:
             - containerPort: 4222

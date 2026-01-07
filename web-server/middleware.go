@@ -351,7 +351,7 @@ func ValidateToken(tokenString string) (*Claims, error) {
 //
 // Valid Header Authentication (Backward Compatibility):
 //
-//	Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMjMsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImV4cCI6MTY3MjUzMTIwMCwiaWF0IjoxNjcyNDQ0ODAwfQ.signature
+//	Authorization: Bearer *******AwfQ.signature
 //
 // Example Protected Handler:
 //

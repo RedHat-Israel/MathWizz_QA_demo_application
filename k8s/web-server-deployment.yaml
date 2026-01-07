@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: web-server
-          image: localhost/mathwizz/web-server:latest
+          image: mathwizz/web-server:latest
           imagePullPolicy: Never  # Use local image from Kind
           ports:
             - containerPort: 8080

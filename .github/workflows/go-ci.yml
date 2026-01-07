@@ -83,6 +83,8 @@ jobs:
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
+    # Note: This job works in GitHub Actions but may fail with 'act' due to npm 10.x bugs
+    # in containerized environments. Run tests locally with: cd frontend && npm test
 
     steps:
       - name: Checkout code
@@ -146,11 +148,11 @@ jobs:
 
           # Verify each image exists with correct tag
           IMAGES=(
-            "${{ env.IMAGE_PREFIX }}/database:latest"
-            "${{ env.IMAGE_PREFIX }}/message-queue:latest"
-            "${{ env.IMAGE_PREFIX }}/web-server:latest"
-            "${{ env.IMAGE_PREFIX }}/history-worker:latest"
-            "${{ env.IMAGE_PREFIX }}/frontend:latest"
+            "mathwizz/database:latest"
+            "mathwizz/message-queue:latest"
+            "mathwizz/web-server:latest"
+            "mathwizz/history-worker:latest"
+            "mathwizz/frontend:latest"
           )
 
           MISSING_IMAGES=()
@@ -179,23 +181,23 @@ jobs:
           echo "Running smoke tests on built images..."
 
           # Test database image has PostgreSQL
-          docker run --rm ${{ env.IMAGE_PREFIX }}/database:latest postgres --version
+          docker run --rm mathwizz/database:latest postgres --version
           echo "✓ Database image functional"
 
           # Test message-queue image has NATS
-          docker run --rm ${{ env.IMAGE_PREFIX }}/message-queue:latest nats-server --version
+          docker run --rm mathwizz/message-queue:latest nats-server --version
           echo "✓ Message-queue image functional"
 
           # Test web-server image exists and has entrypoint
-          docker inspect ${{ env.IMAGE_PREFIX }}/web-server:latest > /dev/null
+          docker inspect mathwizz/web-server:latest > /dev/null
           echo "✓ Web-server image functional"
 
           # Test history-worker image exists and has entrypoint
-          docker inspect ${{ env.IMAGE_PREFIX }}/history-worker:latest > /dev/null
+          docker inspect mathwizz/history-worker:latest > /dev/null
           echo "✓ History-worker image functional"
 
           # Test frontend image has nginx
-          docker run --rm ${{ env.IMAGE_PREFIX }}/frontend:latest nginx -v
+          docker run --rm mathwizz/frontend:latest nginx -v
           echo "✓ Frontend image functional"
 
           echo ""
@@ -208,6 +210,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Install Kind
         run: |
@@ -253,6 +258,14 @@ jobs:
 
       - name: Run setup-kind.sh (full deployment)
         run: ./setup-kind.sh
+
+      - name: Load image tarballs into Kind
+        run: |
+          kind load image-archive database.tar --name ${{ env.CLUSTER_NAME }}
+          kind load image-archive message-queue.tar --name ${{ env.CLUSTER_NAME }}
+          kind load image-archive web-server.tar --name ${{ env.CLUSTER_NAME }}
+          kind load image-archive history-worker.tar --name ${{ env.CLUSTER_NAME }}
+          kind load image-archive frontend.tar --name ${{ env.CLUSTER_NAME }}
 
       - name: Wait for services to be fully ready
         run: |

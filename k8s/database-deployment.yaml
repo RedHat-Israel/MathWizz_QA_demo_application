@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: localhost/mathwizz/database:latest
+          image: mathwizz/database:latest
           imagePullPolicy: Never  # Use local image from Kind
           ports:
             - containerPort: 5432

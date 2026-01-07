@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: localhost/mathwizz/frontend:latest
+          image: mathwizz/frontend:latest
           imagePullPolicy: Never  # Use local image from Kind
           ports:
             - containerPort: 80
