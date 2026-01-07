@@ -16,7 +16,7 @@ fi
 
 # Delete the Kind cluster
 echo "Deleting Kind cluster..."
-kind delete cluster --name mathwizz-cluster 2>&1 | grep -v "using podman due to KIND_EXPERIMENTAL_PROVIDER" | grep -v "enabling experimental podman provider" || true
+kind delete cluster --name mathwizz-cluster || true
 
 echo "✓ Kind cluster deleted"
 echo ""
