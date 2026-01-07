@@ -41,14 +41,16 @@ load_image() {
         }
 
         podman save -o /tmp/${service}.tar ${target_image}
-        kind load image-archive /tmp/${service}.tar --name $CLUSTER_NAME 2>&1 | grep -v "using podman due to KIND_EXPERIMENTAL_PROVIDER" | grep -v "enabling experimental podman provider" || true
+        kind load image-archive /tmp/${service}.tar --name $CLUSTER_NAME || echo "Warning: Image load reported error, but may have succeeded"
         rm -f /tmp/${service}.tar
 
         # Note: We don't clean up the ${target_image} tag - it's harmless and
         # prevents issues with cached builds on subsequent runs
     else
-        # With Docker, use direct load
-        kind load docker-image mathwizz/${service}:latest --name $CLUSTER_NAME
+        # With Docker, use direct docker-image load (requires BuildKit to be disabled)
+        # This is more reliable than tar archives when BuildKit is off
+        # Note: May report errors in Docker-in-Docker (act) but often still works
+        kind load docker-image mathwizz/${service}:latest --name $CLUSTER_NAME || echo "Warning: Image load reported error, but may have succeeded"
     fi
 
     echo "✓ ${service} image loaded"

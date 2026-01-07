@@ -1,0 +1,20 @@
+# Kind cluster configuration for MathWizz CI Testing
+# Uses different ports than kind-config.yaml to avoid conflicts with local development
+# This allows students to have a local cluster running while testing with act
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: mathwizz-cluster
+
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.31.0@sha256:53df588e04085fd41ae12de0c3fe4c72f7013bba32a20e7325357a1ac94ba865
+    extraPortMappings:
+      # Frontend service (using different ports to avoid conflicts)
+      - containerPort: 30080
+        hostPort: 13000
+        protocol: TCP
+      # Web-server API (using different ports to avoid conflicts)
+      - containerPort: 30081
+        hostPort: 18080
+        protocol: TCP

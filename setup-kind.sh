@@ -61,14 +61,14 @@ echo "========================================="
 CLUSTER_NAME="mathwizz-cluster"
 if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
     echo "⚠️  Existing cluster '${CLUSTER_NAME}' found - deleting for clean setup..."
-    kind delete cluster --name $CLUSTER_NAME 2>&1 | grep -v "using podman due to KIND_EXPERIMENTAL_PROVIDER" | grep -v "enabling experimental podman provider" || true
+    kind delete cluster --name $CLUSTER_NAME || true
     echo "✓ Existing cluster deleted"
     echo ""
 fi
 
 # Create Kind cluster
 echo "Creating Kind cluster..."
-kind create cluster --config k8s/kind-config.yaml 2>&1 | grep -v "using podman due to KIND_EXPERIMENTAL_PROVIDER" | grep -v "enabling experimental podman provider" || true
+kind create cluster --config k8s/kind-config.yaml
 
 echo "✓ Kind cluster created"
 echo ""

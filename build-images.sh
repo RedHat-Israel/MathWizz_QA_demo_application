@@ -16,6 +16,8 @@ if command -v podman &> /dev/null; then
 elif command -v docker &> /dev/null; then
     CONTAINER_CMD="docker"
     BUILD_FLAGS=""
+    # Disable BuildKit to ensure images can be saved/loaded properly with Kind
+    export DOCKER_BUILDKIT=0
 else
     echo "Error: neither podman nor docker is installed"
     exit 1
