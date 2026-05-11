@@ -1,0 +1,6 @@
+{
+  "max_test_duration_ms": 5000,
+  "max_memory_delta_bytes": 10485760,
+  "max_total_allocs": 100000,
+  "max_suite_duration_ms": 60000
+}

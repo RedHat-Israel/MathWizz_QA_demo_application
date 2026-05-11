@@ -45,3 +45,7 @@ temp/
 *.png
 !frontend/public/frontend_background.jpg
 !**/public/favicon.png
+
+# Resource/performance test reports (generated)
+testing/reports/*.json
+testing/reports/*.html
