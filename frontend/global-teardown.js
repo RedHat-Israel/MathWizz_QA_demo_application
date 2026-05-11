@@ -5,6 +5,11 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 async function globalTeardown() {
+  if (process.env.CI) {
+    console.log('\nCI detected — skipping Docker Compose teardown (infrastructure managed externally).\n');
+    return;
+  }
+
   console.log('\n🧹 Cleaning up E2E test infrastructure...\n');
 
   const projectRoot = path.join(__dirname, '..');

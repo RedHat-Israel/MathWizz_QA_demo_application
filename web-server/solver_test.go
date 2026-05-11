@@ -45,4 +45,30 @@ var _ = Describe("SolveMath", func() {
 			Expect(SolveMath("5-5")).Should(Equal(0))
 		})
 	})
+
+	// Regression test for MATHWZ-42
+	When("handling calculations near integer overflow boundaries", func() {
+		It("returns correct results for large but safe multiplications", func() {
+			result, err := SolveMath("999999*999999")
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(result).Should(Equal(999998000001))
+		})
+
+		It("returns a result without error even when int64 overflow occurs", func() {
+			_, err := SolveMath("999999999999999*999999999999999")
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		It("produces incorrect negative values when int64 overflows", func() {
+			result, err := SolveMath("999999999999999*999999999999999")
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(result).Should(BeNumerically("<", 0))
+		})
+
+		It("gives correct results for moderately large multiplications", func() {
+			result, err := SolveMath("94906265*94906265")
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(result).Should(Equal(9007199136250225))
+		})
+	})
 })

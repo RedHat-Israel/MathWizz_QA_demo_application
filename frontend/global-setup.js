@@ -5,6 +5,11 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 async function globalSetup() {
+  if (process.env.CI) {
+    console.log('\nCI detected — skipping Docker Compose setup (infrastructure managed externally).\n');
+    return;
+  }
+
   console.log('\n🚀 Starting E2E test infrastructure...\n');
 
   const projectRoot = path.join(__dirname, '..');

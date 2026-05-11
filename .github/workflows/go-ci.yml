@@ -57,6 +57,14 @@ jobs:
           files: ./${{ matrix.service }}/coverage.out
           flags: ${{ matrix.service }}
 
+      - name: Upload resource reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-reports-${{ matrix.service }}
+          path: testing/reports/
+          retention-days: 14
+
   lint-go-services:
     name: Lint Go Services
     runs-on: ubuntu-latest
@@ -284,3 +292,71 @@ jobs:
             exit 1
           fi
           echo "✓ Cleanup successful"
+
+  check-resource-thresholds:
+    name: Check Resource Thresholds
+    runs-on: ubuntu-latest
+    needs: [test-go-services]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          path: testing/reports/
+          merge-multiple: true
+
+      - name: Check thresholds
+        run: |
+          echo "Checking resource thresholds..."
+          THRESHOLDS_FILE="testing/utils/thresholds.json"
+          VIOLATIONS=0
+
+          if [ ! -f "$THRESHOLDS_FILE" ]; then
+            echo "No thresholds file found at $THRESHOLDS_FILE, skipping"
+            exit 0
+          fi
+
+          MAX_TEST_MS=$(python3 -c "import json; print(json.load(open('$THRESHOLDS_FILE'))['max_test_duration_ms'])")
+          MAX_SUITE_MS=$(python3 -c "import json; print(json.load(open('$THRESHOLDS_FILE'))['max_suite_duration_ms'])")
+          MAX_MEM=$(python3 -c "import json; print(json.load(open('$THRESHOLDS_FILE'))['max_memory_delta_bytes'])")
+
+          for REPORT in testing/reports/*.json; do
+            [ -f "$REPORT" ] || continue
+            echo ""
+            echo "=== Checking: $REPORT ==="
+
+            SUITE_MS=$(python3 -c "import json; print(json.load(open('$REPORT'))['total_duration_ms'])")
+            if python3 -c "exit(0 if $SUITE_MS <= $MAX_SUITE_MS else 1)"; then
+              echo "  Suite duration: ${SUITE_MS}ms (OK, limit: ${MAX_SUITE_MS}ms)"
+            else
+              echo "  VIOLATION: Suite duration ${SUITE_MS}ms exceeds limit ${MAX_SUITE_MS}ms"
+              VIOLATIONS=$((VIOLATIONS + 1))
+            fi
+
+            python3 -c "
+          import json, sys
+          report = json.load(open('$REPORT'))
+          violations = 0
+          for t in report['tests']:
+              if t['duration_ms'] > $MAX_TEST_MS:
+                  print(f\"  VIOLATION: {t['name']} took {t['duration_ms']:.0f}ms (limit: ${MAX_TEST_MS}ms)\")
+                  violations += 1
+              if t.get('heap_alloc_delta', 0) > $MAX_MEM:
+                  print(f\"  VIOLATION: {t['name']} used {t['heap_alloc_delta']} bytes (limit: ${MAX_MEM} bytes)\")
+                  violations += 1
+          if violations == 0:
+              print('  All tests within thresholds')
+          sys.exit(violations)
+          " || VIOLATIONS=$((VIOLATIONS + $?))
+          done
+
+          echo ""
+          if [ $VIOLATIONS -gt 0 ]; then
+            echo "FAILED: $VIOLATIONS threshold violation(s) found"
+            exit 1
+          else
+            echo "PASSED: All resource thresholds met"
+          fi
