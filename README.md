@@ -46,6 +46,11 @@ The codebase has been vibe-coded to serve as a learning resource and likely cont
   - [History-Worker Tests](#history-worker-tests)
   - [Frontend Tests](#frontend-tests)
   - [Notes About Running Tests](#notes-about-running-tests)
+- [Resource & Performance Tracking](#resource--performance-tracking)
+  - [How It Works](#how-it-works)
+  - [Directory Structure](#directory-structure)
+  - [Running Tests with Resource Tracking](#running-tests-with-resource-tracking)
+  - [CI Gate — Threshold Checking](#ci-gate--threshold-checking)
 - [Running Linters](#running-linters)
   - [Go Services](#go-services)
   - [Frontend](#frontend)
@@ -55,6 +60,10 @@ The codebase has been vibe-coded to serve as a learning resource and likely cont
   - [Viewing Logs](#viewing-logs)
   - [Debugging](#debugging)
 - [Teardown](#teardown)
+- [Portable Happy Path E2E Workflow](#portable-happy-path-e2e-workflow)
+  - [What It Tests](#what-it-tests)
+  - [How It Runs](#how-it-runs)
+  - [Adapting for Another Team's CI](#adapting-for-another-teams-ci)
 - [CI/CD](#cicd)
   - [Running Workflows Locally with `act`](#running-workflows-locally-with-act)
 - [Cross-Platform Support](#cross-platform-support)
@@ -213,6 +222,67 @@ npm run e2e:ui
 - Parallel integration test failures are harder to debug due to interleaved output
 - The CI/CD pipeline (`.github/workflows/go-ci.yml`) uses `-p` only for unit tests for this reason
 
+## Resource & Performance Tracking
+
+MathWizz includes built-in resource tracking utilities that automatically capture memory usage, allocations, and timing data for every test. Reports are written as JSON (machine-readable) and consolidated into a single HTML report (human-readable).
+
+### How It Works
+
+**Go (Ginkgo)** — Uses Ginkgo v2's `ReportAfterEach` and `ReportAfterSuite` hooks, registered via `testutils.AttachResourceReporter()` in each suite's `suite_test.go`. Per-test metrics are captured using `runtime.MemStats` and `runtime.NumGoroutine()`.
+
+**JavaScript (Jest)** — A custom Jest reporter (`testing/utils/js/resource-reporter.js`) captures `process.memoryUsage()` deltas per test file.
+
+Both reporters write a JSON file per suite run, then merge all JSON files in the reports directory into a single consolidated HTML report at `testing/reports/resource-report.html`.
+
+### Directory Structure
+
+```
+testing/
+├── utils/
+│   ├── go/                         # Go reporter (Ginkgo hooks + HTML generator)
+│   │   ├── resource_reporter.go
+│   │   ├── html_report.go
+│   │   ├── models.go
+│   │   └── resource_reporter_test.go
+│   ├── js/                         # JS reporter (Jest custom reporter)
+│   │   ├── resource-reporter.js
+│   │   ├── html-report.js
+│   │   └── resource-reporter.test.js
+│   └── thresholds.json             # CI gate threshold configuration
+└── reports/                        # Generated reports (gitignored)
+    └── resource-report.html        # Consolidated HTML report (all suites)
+```
+
+### Running Tests with Resource Tracking
+
+Resource tracking is enabled by default when running tests normally:
+
+```bash
+# Go services — reports generated automatically
+cd web-server && ginkgo -r
+cd history-worker && ginkgo -r
+
+# Frontend — use the test:report script to enable the reporter
+cd frontend && npm run test:report
+```
+
+After running any combination of suites, open `testing/reports/resource-report.html` in a browser to see consolidated results across all suites.
+
+### CI Gate — Threshold Checking
+
+The CI pipeline (`go-ci.yml`) includes a threshold-checking step that reads the JSON reports and compares metrics against `testing/utils/thresholds.json`:
+
+```json
+{
+  "max_test_duration_ms": 5000,
+  "max_memory_delta_bytes": 10485760,
+  "max_total_allocs": 100000,
+  "max_suite_duration_ms": 60000
+}
+```
+
+If any test exceeds a threshold, the CI step fails the PR with a summary of which tests violated which limits.
+
 ## Running Linters
 
 ### Go Services
@@ -305,6 +375,63 @@ To delete the Kind cluster and all resources:
 chmod +x teardown-kind.sh
 ./teardown-kind.sh
 ```
+
+## Portable Happy Path E2E Workflow
+
+MathWizz includes a standalone GitHub Actions workflow (`.github/workflows/happy-path-e2e.yml`) that runs a full happy-path e2e test: register a user, login, solve a math problem, and verify it appears in history. The workflow is designed to be portable — another team integrating with MathWizz can adapt it for their own CI with minimal changes.
+
+### What It Tests
+
+A single focused Playwright test (`frontend/e2e/happy-path.e2e.test.js`) covering the complete user journey:
+
+1. Navigate to MathWizz
+2. Register a new account
+3. Solve a math problem (`25+75`)
+4. Navigate to history and verify the solved problem appears
+
+No edge cases, no error scenarios — just the golden path that proves the application works end-to-end.
+
+### How It Runs
+
+The workflow deploys MathWizz to a Kind cluster, waits for services to be ready, runs the Playwright test, then tears everything down:
+
+```yaml
+on:
+  workflow_dispatch:   # Manual trigger
+  pull_request:
+    branches: [main, develop]
+```
+
+### Adapting for Another Team's CI
+
+Both the workflow file and the Playwright test include a portability docstring explaining how to create a lightweight version without Node.js or Playwright — just `curl` commands:
+
+```bash
+# Register
+curl -s -o /dev/null -w "%{http_code}" -c cookies.txt \
+  -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"testpass123"}'
+
+# Login
+curl -s -o /dev/null -w "%{http_code}" -c cookies.txt \
+  -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"testpass123"}'
+
+# Solve
+curl -s -b cookies.txt \
+  -X POST http://localhost:8080/solve \
+  -H "Content-Type: application/json" \
+  -d '{"problem":"25+75"}'
+# Expected: {"answer":100}
+
+# Verify history
+curl -s -b cookies.txt http://localhost:8080/history
+# Expected: JSON array containing the solved problem
+```
+
+Keep the Kind cluster setup/teardown steps, replace the Playwright test step with these curl commands, and remove the Node.js/Playwright setup steps.
 
 ## CI/CD
 
